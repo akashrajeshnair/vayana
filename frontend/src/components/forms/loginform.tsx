@@ -8,9 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { loginSchema, LoginFormValues } from "@/lib/schemas"
+import { useDispatch } from "react-redux"
+import { useNavigate } from "react-router-dom"
+import api from "@/services/api"
+import { loginSuccess } from "@/store/authSlice"
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -22,9 +28,18 @@ export default function LoginForm() {
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
-    // Implement your login logic here
-    console.log(data)
-    setIsLoading(false)
+    try {
+      const response = await api.post("/auth/login", {
+        email: data.email,
+        password: data.password,
+      })
+      dispatch(loginSuccess(response.data.token));
+      navigate("/");
+    } catch (error: any) {
+      console.error("Login failed", error.response?.data?.message || error.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

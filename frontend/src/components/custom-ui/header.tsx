@@ -1,4 +1,9 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+import { logout } from "@/store/authSlice";
+import { RootState } from "@/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -8,6 +13,18 @@ const navigation = [
 ]
 
 export default function Header() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  const handleRedirect = (segment: string) => {
+    navigate('/' + segment);
+  }
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/');
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,11 +49,27 @@ export default function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Add search functionality here if needed */}
           </div>
-          <nav className="flex items-center">
-            <Button variant="ghost" className="ml-2">
-              Sign In
-            </Button>
-          </nav>
+          {isAuthenticated ? (
+            <>
+              <nav className="flex items-center">
+                <Button variant="ghost" className="ml-2" onClick={() => handleRedirect('login')}>
+                  Login
+                </Button>
+              </nav>
+              <nav className="flex items-center">
+                <Button variant="ghost" className="ml-2" onClick={() => handleRedirect('register')}>
+                  Sign Up
+                </Button>
+              </nav>
+            </>
+          ) : (
+            <nav className="flex items-center">
+              <Button variant="ghost" className="ml-2" onClick={() => handleLogout()}>
+                Logout
+              </Button>
+            </nav>
+          )
+          }
         </div>
       </div>
     </header>

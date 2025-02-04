@@ -8,9 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { registerSchema, RegisterFormValues } from "@/lib/schemas"
+import api from "@/services/api"
+import { useNavigate } from "react-router-dom"
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -24,9 +27,21 @@ export default function RegisterForm() {
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true)
-    // Implement your registration logic here
-    console.log(data)
-    setIsLoading(false)
+    try {
+      const response = await api.post('/auth/register', {
+        username: data.name,
+        email: data.email,
+        password: data.password,
+      })
+      if (response.status === 200) {
+        console.log('User registered successfully')
+        navigate('/login')
+      }
+    } catch (error: any) {
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

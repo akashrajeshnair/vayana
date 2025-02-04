@@ -1,23 +1,15 @@
-import { useEffect, useState } from "react";
-import api from "./services/api";
+import AppRoutes from "./routes/routes";
+import Header from "./components/custom-ui/header";
+import Footer from "./components/custom-ui/footer";
 
 const App = () => {
-  const [status, setStatus] = useState("");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await api.get("/health");
-        setStatus(response.data.status);
-      } catch (error) {
-        console.error(error);
-        setStatus("Error");
-      }
-    }
-    fetchData()
-  }, [])
-
-  return <div>Backend Status: {status || "Loading..."}</div>
+  return (
+    <>
+      <Header />
+      <AppRoutes />
+      <Footer />
+    </>
+  )
 }
 
 export default App;
