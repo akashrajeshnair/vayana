@@ -8,15 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"vayana/pkg/auth"
+	"vayana/pkg/db"
+	"vayana/pkg/logger"
+	"vayana/services/user/api/handlers"
+	"vayana/services/user/api/routes"
+	"vayana/services/user/config"
+	"vayana/services/user/internal/models"
+	"vayana/services/user/internal/repository"
 
-	"github.com/akashrajeshnair/vayana/pkg/auth"
-	"github.com/akashrajeshnair/vayana/pkg/db"
-	"github.com/akashrajeshnair/vayana/pkg/logger"
-	"github.com/akashrajeshnair/vayana/services/user/api/handlers"
-	"github.com/akashrajeshnair/vayana/services/user/api/routes"
-	"github.com/akashrajeshnair/vayana/services/user/config"
-	"github.com/akashrajeshnair/vayana/services/user/internal/models"
-	"github.com/akashrajeshnair/vayana/services/user/internal/repository"
 	"go.uber.org/zap"
 )
 

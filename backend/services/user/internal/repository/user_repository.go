@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"github.com/akashrajeshnair/vayana/pkg/errors"
-	"github.com/akashrajeshnair/vayana/services/user/internal/models"
+	"vayana/pkg/errors"
+	"vayana/services/user/internal/models"
+
 	"gorm.io/gorm"
 )
 

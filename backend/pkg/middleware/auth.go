@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"vayana/pkg/auth"
 
-	"github.com/akashrajeshnair/vayana/pkg/auth"
 	"github.com/gin-gonic/gin"
 )
 

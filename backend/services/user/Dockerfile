@@ -2,22 +2,20 @@ FROM golang:1.23-alpine AS build
 
 RUN apk add --no-cache git
 
-WORKDIR /app/backend
+WORKDIR /app
 
-COPY ../../go.mod . 
-COPY ../../go.sum . 
-COPY ../../services ./services
+COPY . .
 
 RUN go mod tidy 
 
-RUN go build -o /app/user-service .
+RUN go build -o /app/user-service ./services/user
 
 # Final stage
 FROM alpine:latest
 
 WORKDIR /app
 COPY --from=build /app/user-service .
-Copy --from=build /app/.env .
+COPY --from=build /app/services/user/.env .
 
 EXPOSE 8080
 

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -11,11 +10,7 @@ import (
 )
 
 type DBConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
+	ConnectionString string
 }
 
 func LoadDatabaseConfig() *DBConfig {
@@ -24,19 +19,14 @@ func LoadDatabaseConfig() *DBConfig {
 	}
 
 	return &DBConfig{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   os.Getenv("DB_NAME"),
+		ConnectionString: os.Getenv("DATABASE_URL"),
 	}
 }
 
 func NewPostgresDB() (*gorm.DB, error) {
 	config := LoadDatabaseConfig()
 
-	connectionString := fmt.Sprintf("host %s port = %s user = %s password = %s dbname = %s sslmode = disable",
-		config.Host, config.Port, config.User, config.Password, config.DBName)
+	connectionString := config.ConnectionString
 
 	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
 	if err != nil {

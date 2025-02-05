@@ -2,10 +2,10 @@ package routes
 
 import (
 	"time"
+	"vayana/pkg/auth"
+	"vayana/pkg/middleware"
+	"vayana/services/user/api/handlers"
 
-	"github.com/akashrajeshnair/vayana/pkg/auth"
-	"github.com/akashrajeshnair/vayana/pkg/middleware"
-	"github.com/akashrajeshnair/vayana/services/user/api/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-module github.com/akashrajeshnair/vayana
+module vayana
 
 go 1.22.10
 
