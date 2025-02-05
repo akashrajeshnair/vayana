@@ -15,7 +15,7 @@ FROM alpine:latest
 
 WORKDIR /app
 COPY --from=build /app/user-service .
-COPY --from=build /app/services/user/.env .
+# COPY --from=build /app/services/user/.env .
 
 EXPOSE 8080
 
