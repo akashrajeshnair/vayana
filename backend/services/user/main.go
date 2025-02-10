@@ -45,6 +45,10 @@ func main() {
 		log.Fatal("Failed to load configuration", zap.Error(err))
 	}
 
+	if err := validateOAuthConfig(cfg); err != nil {
+		log.Fatal("Invalid OAuth configuration", zap.Error(err))
+	}
+
 	// Initialize database connection
 	db, err := db.NewPostgresDB()
 	if err != nil {
@@ -118,12 +122,31 @@ func validateEnvironment() error {
 	required := []string{
 		"JWT_SECRET",
 		"DB_PASSWORD",
+		"GOOGLE_CLIENT_ID",
+		"GOOGLE_CLIENT_SECRET",
+		"GOOGLE_REDIRECT_URL",
 	}
 
 	for _, env := range required {
 		if os.Getenv(env) == "" {
 			return fmt.Errorf("required environment variable %s is not set", env)
 		}
+	}
+
+	return nil
+}
+
+func validateOAuthConfig(cfg *config.UserServiceConfig) error {
+	if cfg.GoogleClientID == "" {
+		return fmt.Errorf("error: Google Client ID is required")
+	}
+
+	if cfg.GoogleClientSecret == "" {
+		return fmt.Errorf("error: Google Client Secret is required")
+	}
+
+	if cfg.GoogleRedirectURL == "" {
+		return fmt.Errorf("error: Google Redirect URL is required")
 	}
 
 	return nil

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,21 +15,40 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type UserHandler struct {
-	userRepo   *repository.UserRepository
-	jwtManager *auth.JWTManager
-	logger     *logger.Logger
-	config     *config.UserServiceConfig
+	userRepo    *repository.UserRepository
+	jwtManager  *auth.JWTManager
+	logger      *logger.Logger
+	config      *config.UserServiceConfig
+	oauthconfig *oauth2.Config
+}
+
+type GoogleUserInfo struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
+	Picture       string `json:"picture"`
 }
 
 func NewUserHandler(userRepo *repository.UserRepository, jwtManager *auth.JWTManager, logger *logger.Logger, config *config.UserServiceConfig) *UserHandler {
+	oauthconfig := &oauth2.Config{
+		ClientID:     config.GoogleClientID,
+		ClientSecret: config.GoogleClientSecret,
+		RedirectURL:  config.GoogleRedirectURL,
+		Endpoint:     google.Endpoint,
+	}
+
 	return &UserHandler{
-		userRepo:   userRepo,
-		jwtManager: jwtManager,
-		logger:     logger,
-		config:     config,
+		userRepo:    userRepo,
+		jwtManager:  jwtManager,
+		logger:      logger,
+		config:      config,
+		oauthconfig: oauthconfig,
 	}
 }
 
@@ -258,4 +279,109 @@ func (h *UserHandler) GetServiceMetadata(c *gin.Context) {
 		h.config.ServiceName,
 		h.config.ServiceVersion,
 	))
+}
+
+// Google OAuth Flow handlers
+
+func (h *UserHandler) InitiateGoogleAuth(c *gin.Context) {
+	state := auth.GenerateRandomState()
+
+	c.SetCookie("oauth_state", state, 3600, "/", "", false, true)
+
+	url := h.oauthconfig.AuthCodeURL(state)
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *UserHandler) HandleGoogleCallback(c *gin.Context) {
+	state, _ := c.Cookie("oauth_state")
+
+	if state != c.Query("state") {
+		h.logger.Error("Invalid OAuth State")
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid OAuth State",
+		})
+		return
+	}
+
+	code := c.Query("code")
+	token, err := h.oauthconfig.Exchange(c, code)
+	if err != nil {
+		h.logger.Error("Code Exchange failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to exchange code",
+		})
+		return
+	}
+
+	userInfo, err := h.GetGoogleUserInfo(token.AccessToken)
+	if err != nil {
+		h.logger.Error("Failed to get user information from Google", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get user information from Google",
+		})
+		return
+	}
+
+	user, err := h.userRepo.GetUserByEmail(userInfo.Email)
+	if err != nil {
+		user, err = h.userRepo.CreateUser(userInfo.Email, "", userInfo.Name)
+		if err != nil {
+			h.logger.Error("Failed to create user: user already exists", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+				Code:    http.StatusInternalServerError,
+				Message: "User already exists",
+			})
+			return
+		}
+	}
+
+	durationHours, err := strconv.Atoi(h.config.JWTDuration)
+	if err != nil {
+		durationHours = 168
+	}
+	duration := time.Duration(durationHours) * time.Hour
+
+	jwtToken, err := h.jwtManager.GenerateToken(user.ID, "user", duration)
+	if err != nil {
+		h.logger.Error("Failed to generate Token", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to generate token",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.LoginResponse{
+		Token: jwtToken,
+		User: dto.UserResponse{
+			ID:        user.ID,
+			Name:      user.Name,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
+	})
+}
+
+func (h *UserHandler) GetGoogleUserInfo(accesstoken string) (*GoogleUserInfo, error) {
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + accesstoken)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo GoogleUserInfo
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		return nil, err
+	}
+
+	return &userInfo, nil
 }

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -11,15 +10,16 @@ import (
 type UserServiceConfig struct {
 	ServerPort     string
 	ServerHost     string
-	DBHost         string
-	DBPort         string
-	DBUser         string
-	DBPassword     string
-	DBName         string
+	DatabaseURL    string
 	JWTSecret      string
 	JWTDuration    string
 	ServiceName    string
 	ServiceVersion string
+
+	// Google OAuth fields
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
 }
 
 func LoadUserServiceConfig() (*UserServiceConfig, error) {
@@ -28,28 +28,17 @@ func LoadUserServiceConfig() (*UserServiceConfig, error) {
 	}
 
 	config := &UserServiceConfig{
-		ServerPort:     os.Getenv("SERVER_PORT"),
-		ServerHost:     os.Getenv("SERVER_HOST"),
-		DBHost:         os.Getenv("DB_HOST"),
-		DBPort:         os.Getenv("DB_PORT"),
-		DBPassword:     os.Getenv("DB_PASSWORD"),
-		DBName:         os.Getenv("DB_NAME"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		JWTDuration:    os.Getenv("JWT_DURATION"),
-		ServiceName:    os.Getenv("SERVICE_NAME"),
-		ServiceVersion: os.Getenv("SERVICE_VERSION"),
+		ServerPort:         os.Getenv("SERVER_PORT"),
+		ServerHost:         os.Getenv("SERVER_HOST"),
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		JWTSecret:          os.Getenv("JWT_SECRET"),
+		JWTDuration:        os.Getenv("JWT_DURATION"),
+		ServiceName:        os.Getenv("SERVICE_NAME"),
+		ServiceVersion:     os.Getenv("SERVICE_VERSION"),
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 	}
 
 	return config, nil
-}
-
-func (c *UserServiceConfig) GetPostgresURL() string {
-	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		c.DBHost,
-		c.DBPort,
-		c.DBUser,
-		c.DBPassword,
-		c.DBName,
-	)
 }

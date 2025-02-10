@@ -17,13 +17,30 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 
 func (r *UserRepository) CreateUser(email, password, name string) (*models.User, error) {
 	user := &models.User{
-		Email:    email,
-		Password: password,
-		Name:     name,
+		Email:        email,
+		Password:     password,
+		Name:         name,
+		AuthProvider: "email",
 	}
 
 	if err := r.db.Create(user).Error; err != nil {
 		return nil, errors.NewDatabaseError("failed to create new user", err)
+	}
+
+	return user, nil
+}
+
+func (r *UserRepository) CreateOAuthUser(email, name, googleID string) (*models.User, error) {
+	user := &models.User{
+		Email:         email,
+		Name:          name,
+		GoogleID:      googleID,
+		AuthProvider:  "google",
+		EmailVerified: true,
+	}
+
+	if err := r.db.Create(user).Error; err != nil {
+		return nil, errors.NewDatabaseError("failed to create new OAuth user", err)
 	}
 
 	return user, nil
@@ -55,9 +72,45 @@ func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
 	return user, nil
 }
 
+func (r *UserRepository) GetUserByGoogleID(googleID string) (*models.User, error) {
+	user := &models.User{}
+
+	if err := r.db.Where("google_id = ?", googleID).First(user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NewNotFoundError("user not found")
+		}
+		return nil, errors.NewDatabaseError("failed to get user by google id", err)
+	}
+
+	return user, nil
+}
+
 func (r *UserRepository) UpdateUser(user *models.User) error {
 	if err := r.db.Save(user).Error; err != nil {
 		return errors.NewDatabaseError("failed to update user", err)
+	}
+	return nil
+}
+
+func (r *UserRepository) LinkGoogleAccount(userID, googleID string) error {
+	updates := map[string]interface{}{
+		"google_id":      googleID,
+		"email_verified": true,
+	}
+
+	if err := r.db.Model(&models.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+		return errors.NewDatabaseError("failed to link Google account", err)
+	}
+	return nil
+}
+
+func (r *UserRepository) UnlinkGoogleAccount(userID string) error {
+	updates := map[string]interface{}{
+		"google_id": nil,
+	}
+
+	if err := r.db.Model(&models.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
+		return errors.NewDatabaseError("failed to unlink Google account", err)
 	}
 	return nil
 }

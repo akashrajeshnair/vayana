@@ -19,7 +19,7 @@ func SetupRouter(userHandler *handlers.UserHandler, jwtManager *auth.JWTManager)
 
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "https://vayana.vercel.app"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -46,6 +46,15 @@ func SetupRouter(userHandler *handlers.UserHandler, jwtManager *auth.JWTManager)
 		{
 			public.POST("/register", userHandler.RegisterUser)
 			public.POST("/login", userHandler.LoginUser)
+
+			auth := public.Group("/auth")
+			{
+				google := auth.Group("/google")
+				{
+					google.GET("/login", userHandler.InitiateGoogleAuth)
+					google.GET("/callback", userHandler.HandleGoogleCallback)
+				}
+			}
 		}
 
 		// Protected routes
