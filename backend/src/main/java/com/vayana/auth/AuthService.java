@@ -6,7 +6,13 @@ import com.vayana.auth.dto.RegisterRequest;
 import com.vayana.domain.User;
 import com.vayana.repository.UserRepository;
 import com.vayana.security.JwtUtil;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +22,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final String welcomeEmailUrl;
+    private final HttpClient httpClient;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtUtil jwtUtil) {
+                       JwtUtil jwtUtil,
+                       @Value("${lambda.welcomeEmail.url}") String welcomeEmailUrl) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.welcomeEmailUrl = welcomeEmailUrl;
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     public void register(RegisterRequest request) {
@@ -50,6 +61,22 @@ public class AuthService {
     }
 
     private void triggerWelcomeEmail(String email) {
-        // Placeholder for Lambda integration
+        if (welcomeEmailUrl == null || welcomeEmailUrl.isBlank()) {
+            return;
+        }
+
+        try {
+            String payload = "{\"email\":\"" + email + "\"}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(welcomeEmailUrl))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
+                    .build();
+
+            httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        } catch (Exception ex) {
+            // Keep it simple: don't fail registration if the email call fails
+        }
     }
 }

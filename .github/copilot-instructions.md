@@ -1,4 +1,4 @@
-This is a full-stack book reading tracker app (like Goodreads).
+This is a full-stack book reading tracker app (like Goodreads). The name of the application is "Vayana". The main features are:
 - Backend: Spring Boot, PostgreSQL, JWT auth
 - Frontend: NextJS, React, TypeScript, Tailwind CSS
 - AWS Lambda: welcome email on signup, weekly reading summary email (via AWS SES)
